@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Ruleta</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #0d0d1a;
+    --panel: #141428;
+    --gold: #FFD700;
+    --red: #E74C3C;
+    --green: #27AE60;
+    --text: #e8e8ff;
+    --muted: #6666aa;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  /* ── Pantalla de entrada ── */
+  #pantalla-entrada {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    width: 100%;
+    padding: 28px 24px;
+    gap: 20px;
+  }
+
+  #pantalla-entrada h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2rem, 8vw, 3.2rem);
+    color: var(--gold);
+    letter-spacing: 4px;
+    text-align: center;
+  }
+
+  #pantalla-entrada p {
+    color: var(--muted);
+    font-size: 0.95rem;
+    text-align: center;
+  }
+
+  textarea {
+    width: 100%;
+    max-width: 440px;
+    height: 220px;
+    background: #1a1a35;
+    border: 2px solid #2a2a55;
+    border-radius: 16px;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.05rem;
+    padding: 16px;
+    resize: none;
+    outline: none;
+    transition: border-color .2s;
+    line-height: 1.8;
+  }
+  textarea:focus { border-color: var(--gold); }
+  textarea::placeholder { color: var(--muted); }
+
+  .btn {
+    width: 100%;
+    max-width: 440px;
+    padding: 16px;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: transform .1s, filter .2s;
+    -webkit-appearance: none;
+  }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-girar {
+    background: var(--red);
+    color: white;
+    box-shadow: 0 4px 24px #e74c3c55;
+  }
+  .btn-nueva {
+    background: var(--green);
+    color: white;
+    box-shadow: 0 4px 24px #27ae6055;
+    display: none;
+  }
+
+  #error {
+    color: #ff6b6b;
+    font-size: 0.9rem;
+    text-align: center;
+    min-height: 20px;
+  }
+
+  /* ── Pantalla de ruleta ── */
+  #pantalla-ruleta {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    width: 100%;
+    padding: 20px 16px;
+    gap: 16px;
+  }
+
+  .wheel-wrapper {
+    position: relative;
+    width: min(90vw, 440px);
+    height: min(90vw, 440px);
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+  }
+
+  /* Puntero */
+  .pointer {
+    position: absolute;
+    right: -18px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 16px solid transparent;
+    border-bottom: 16px solid transparent;
+    border-right: 32px solid var(--gold);
+    filter: drop-shadow(0 0 6px #FFD70099);
+  }
+
+  /* Resultado */
+  #resultado {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.6rem, 7vw, 2.6rem);
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-align: center;
+    min-height: 2.8rem;
+    text-shadow: 0 0 20px #FFD70066;
+    opacity: 0;
+    transition: opacity .5s;
+  }
+  #resultado.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ══ PANTALLA ENTRADA ══ -->
+<div id="pantalla-entrada">
+  <h1>¡Que la suerte decida!</h1>
+  <p>Escribe un participante por línea.</p>
+
+  <textarea id="lista" placeholder="Ana&#10;Carlos&#10;María&#10;Iván&#10;..."></textarea>
+
+  <div id="error"></div>
+
+  <button class="btn btn-girar" id="btn-girar" onclick="prepararRuleta()">▶ GIRAR</button>
+</div>
+
+<!-- ══ PANTALLA RULETA ══ -->
+<div id="pantalla-ruleta">
+  <div class="wheel-wrapper">
+    <canvas id="canvas"></canvas>
+    <div class="pointer"></div>
+  </div>
+
+  <div id="resultado"></div>
+  <button class="btn btn-nueva" id="btn-nueva" onclick="volver()">🗑 NUEVA TIRADA</button>
+</div>
+
+<script>
+const COLORS = [
+  "#E74C3C","#F39C12","#27AE60","#8E44AD",
+  "#F1C40F","#2980B9","#E67E22","#1ABC9C",
+  "#C0392B","#16A085","#D35400","#6C3483"
+];
+
+let concursantes = [];
+let anguloActual = 0;
+let animId = null;
+
+// ── Preparar y pasar a pantalla ruleta ──
+function prepararRuleta() {
+  const raw = document.getElementById("lista").value.trim();
+  const nombres = raw.split("\n").map(l => l.trim()).filter(Boolean);
+  const err = document.getElementById("error");
+
+  if (nombres.length < 2) {
+    err.textContent = "⚠ Añade al menos 2 participantes.";
+    return;
+  }
+  err.textContent = "";
+  concursantes = nombres;
+
+  document.getElementById("pantalla-entrada").style.display = "none";
+  const pr = document.getElementById("pantalla-ruleta");
+  pr.style.display = "flex";
+
+  document.getElementById("resultado").textContent = "";
+  document.getElementById("resultado").classList.remove("visible");
+  document.getElementById("btn-nueva").style.display = "none";
+
+  iniciarCanvas();
+  dibujar();
+
+  // Pequeño delay para que el canvas pinte antes de girar
+  setTimeout(girar, 120);
+}
+
+// ── Canvas setup ──
+function iniciarCanvas() {
+  const canvas = document.getElementById("canvas");
+  const size = canvas.offsetWidth;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+}
+
+function getCtx() { return document.getElementById("canvas").getContext("2d"); }
+function getSize() { return document.getElementById("canvas").offsetWidth; }
+
+// ── Dibujar ruleta ──
+function dibujar() {
+  const canvas = document.getElementById("canvas");
+  const ctx = getCtx();
+  const size = getSize();
+  const cx = size / 2, cy = size / 2, r = size / 2 - 4;
+  const n = concursantes.length;
+  const seg = (2 * Math.PI) / n;
+
+  ctx.clearRect(0, 0, size, size);
+
+  concursantes.forEach((nombre, i) => {
+    const inicio = anguloActual + i * seg;
+    const fin = inicio + seg;
+
+    // Sector
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, inicio, fin);
+    ctx.closePath();
+    ctx.fillStyle = COLORS[i % COLORS.length];
+    ctx.fill();
+    ctx.strokeStyle = "#0d0d1a";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Texto
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(inicio + seg / 2);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "white";
+    const fs = Math.max(9, Math.min(15, r / (n * 0.6)));
+    ctx.font = `bold ${fs}px Nunito, sans-serif`;
+    ctx.shadowColor = "#00000088";
+    ctx.shadowBlur = 3;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+    ctx.fillText(nombre.substring(0, 14), r - 10, fs * 0.38);
+    ctx.restore();
+  });
+
+  // Borde dorado
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+  ctx.strokeStyle = "#FFD700";
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  // Centro
+  ctx.beginPath();
+  ctx.arc(cx, cy, 16, 0, 2 * Math.PI);
+  ctx.fillStyle = "#0d0d1a";
+  ctx.fill();
+  ctx.strokeStyle = "#FFD700";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+}
+
+// ── Girar (trucada) ──
+function girar() {
+  const n = concursantes.length;
+  const seg = (2 * Math.PI) / n;
+
+  // El puntero apunta a la derecha (ángulo 0).
+  // Queremos que el segmento 0 quede ahí, con posición aleatoria dentro.
+  const margen = seg * 0.15;
+  const offset = (Math.random() * (seg - 2 * margen)) - (seg / 2 - margen);
+  const destino = (-(seg / 2) + offset + 2 * Math.PI) % (2 * Math.PI);
+
+  const vueltas = (5 + Math.floor(Math.random() * 5)) * 2 * Math.PI;
+  const delta = vueltas + ((destino - anguloActual % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+
+  const duracion = 4000;
+  const inicio = performance.now();
+  const anguloInicio = anguloActual;
+
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+  function step(ahora) {
+    const t = Math.min((ahora - inicio) / duracion, 1);
+    anguloActual = anguloInicio + delta * easeOut(t);
+    dibujar();
+
+    if (t < 1) {
+      animId = requestAnimationFrame(step);
+    } else {
+      mostrarGanador();
+    }
+  }
+
+  animId = requestAnimationFrame(step);
+}
+
+// ── Mostrar ganador ──
+function mostrarGanador() {
+  const ganador = concursantes[0];
+  const el = document.getElementById("resultado");
+  el.textContent = `🏆 ¡${ganador} ha ganado! 🏆`;
+  el.classList.add("visible");
+  document.getElementById("btn-nueva").style.display = "block";
+}
+
+// ── Volver a pantalla de entrada ──
+function volver() {
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  anguloActual = 0;
+  document.getElementById("pantalla-ruleta").style.display = "none";
+  document.getElementById("pantalla-entrada").style.display = "flex";
+}
+</script>
+</body>
+</html>
