@@ -348,19 +348,20 @@ function dibujar() {
 
     // Texto
     const mid = inicio + seg / 2;
-    const tx  = cx + r * 0.62 * Math.cos(mid);
-    const ty  = cy + r * 0.62 * Math.sin(mid);
+    // Ancho máximo disponible en el segmento (cuerda del arco a radio 0.65)
+    const anchoMax = Math.min(r * 0.72, 2 * r * 0.65 * Math.sin(seg / 2) * 0.85);
     ctx.save();
-    ctx.translate(tx, ty);
+    ctx.translate(cx, cy);
     ctx.rotate(mid);
-    ctx.textAlign = 'right';
+    ctx.textAlign = 'center';
     ctx.font = `bold ${fs}px Nunito, sans-serif`;
     ctx.shadowColor   = '#00000099';
     ctx.shadowBlur    = 3;
     ctx.shadowOffsetX = 1;
     ctx.shadowOffsetY = 1;
     ctx.fillStyle = 'white';
-    ctx.fillText(nombre.substring(0, 14), r * 0.38, fs * 0.36);
+    // fillText con maxWidth recorta automáticamente si no cabe
+    ctx.fillText(nombre, r * 0.62, fs * 0.36, anchoMax);
     ctx.restore();
   });
 
