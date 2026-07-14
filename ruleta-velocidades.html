@@ -469,7 +469,14 @@ function dibujar() {
 
 // ══ GIRO ═════════════════════════════════════════════════════════════════════
 function iniciarGiro() {
-  if (girando || ronda >= secuencia.length) return;
+  // Si se agotó la secuencia pero quedan vivos, generar nueva secuencia aleatoria
+  if (ronda >= secuencia.length && participantesVivos.length > 0) {
+    secuencia = calcularSecuenciaAleatoria(participantesOrig.length);
+    // Filtrar solo los que siguen vivos
+    secuencia = secuencia.filter(x => participantesVivos.includes(x));
+    ronda = 0;
+  }
+  if (girando || participantesVivos.length === 0) return;
   document.getElementById('resultado').classList.remove('visible');
   document.getElementById('btn-girar').disabled = true;
   document.getElementById('btn-siguiente').style.display = 'none';
