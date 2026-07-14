@@ -53,12 +53,7 @@ html, body { min-height: 100dvh; background: var(--bg); color: var(--text); font
 .card-info { flex: 1; }
 .card-nombre { font-weight: 700; font-size: 1rem; }
 .card-sub { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
-.card-badge {
-  font-size: 0.7rem; font-weight: 700; padding: 3px 9px;
-  border-radius: 20px; letter-spacing: 1px; margin-right: 10px;
-}
-.badge-trucada { background: #e74c3c22; color: var(--red); border: 1px solid #e74c3c44; }
-.badge-libre   { background: #27ae6022; color: var(--green); border: 1px solid #27ae6044; }
+
 .btn-borrar {
   background: none; border: none; color: var(--muted); font-size: 1.1rem;
   cursor: pointer; padding: 4px 6px;
@@ -114,12 +109,7 @@ html, body { min-height: 100dvh; background: var(--bg); color: var(--text); font
   font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem;
   color: var(--gold); letter-spacing: 2px; text-align: center;
 }
-.info-ronda {
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 12px; padding: 10px 16px; text-align: center;
-  font-size: 0.85rem; color: var(--muted); width: 100%; max-width: 420px;
-}
-.info-ronda strong { color: var(--text); }
+
 
 .sel-num {
   display: flex; align-items: center; gap: 12px;
@@ -223,7 +213,7 @@ canvas { width: 100%; height: 100%; }
 <div id="pantalla-entrada">
   <button class="back-btn" onclick="volverAPartidas()">← Partidas</button>
   <h2 id="titulo-partida"></h2>
-  <div class="info-ronda" id="info-ronda"></div>
+
 
   <div class="sel-num">
     <label>Participantes</label>
@@ -328,7 +318,7 @@ function renderPartidas() {
         <div class="card-nombre">${p.nombre}</div>
         <div class="card-sub">Creada ${new Date(p.creadaEn).toLocaleDateString('es-ES')}</div>
       </div>
-      <span class="card-badge ${trucada ? 'badge-trucada' : 'badge-libre'}">${trucada ? '1ª TIRADA' : 'LIBRE'}</span>
+
       <button class="btn-borrar" onclick="borrarPartida('${p.id}',event)">🗑</button>
     `;
     div.querySelector('.card-info').onclick = () => entrarPartida(p.id);
@@ -368,10 +358,6 @@ function entrarPartida(id) {
   const p = partidas.find(x => x.id === id);
 
   document.getElementById('titulo-partida').textContent = p.nombre;
-  document.getElementById('info-ronda').innerHTML = p.primeraHecha
-    ? '✅ Primera tirada ya realizada — esta será <strong>totalmente aleatoria</strong>'
-    : '🎯 Esta será la <strong>primera tirada</strong> (secuencia especial)';
-
   document.getElementById('pantalla-partidas').style.display = 'none';
   document.getElementById('pantalla-entrada').style.display = 'flex';
   actualizarCampos();
