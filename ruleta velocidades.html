@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Ruleta</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0d1a; --surface: #13131f; --surface2: #1c1c2e;
+  --border: #2a2a45; --gold: #f0c040; --red: #E74C3C;
+  --green: #27AE60; --text: #e8e8ff; --muted: #6666aa;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { min-height: 100dvh; background: var(--bg); color: var(--text); font-family: 'Nunito', sans-serif; overflow-x: hidden; }
+
+/* ── PANTALLA PARTIDAS ── */
+#pantalla-partidas {
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 100dvh; padding: 32px 20px 40px; gap: 16px;
+}
+#pantalla-partidas h1 {
+  font-family: 'Bebas Neue', sans-serif; font-size: 2rem;
+  color: var(--gold); letter-spacing: 3px;
+}
+#pantalla-partidas p { color: var(--muted); font-size: 0.88rem; text-align: center; }
+
+.btn-crear {
+  width: 100%; max-width: 420px; padding: 15px;
+  border: none; border-radius: 14px;
+  font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 2px;
+  background: var(--red); color: white; cursor: pointer;
+  box-shadow: 0 4px 20px #e74c3c33; -webkit-appearance: none;
+  transition: transform .1s;
+}
+.btn-crear:active { transform: scale(0.97); }
+
+.lista-partidas { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 10px; }
+.seccion-label {
+  font-family: 'Bebas Neue', sans-serif; font-size: 0.75rem; letter-spacing: 3px;
+  color: var(--muted); text-transform: uppercase; padding: 6px 0 2px;
+}
+
+.card-partida {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; transition: border-color .2s;
+}
+.card-partida:active { border-color: var(--gold); }
+.card-info { flex: 1; }
+.card-nombre { font-weight: 700; font-size: 1rem; }
+.card-sub { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+.card-badge {
+  font-size: 0.7rem; font-weight: 700; padding: 3px 9px;
+  border-radius: 20px; letter-spacing: 1px; margin-right: 10px;
+}
+.badge-trucada { background: #e74c3c22; color: var(--red); border: 1px solid #e74c3c44; }
+.badge-libre   { background: #27ae6022; color: var(--green); border: 1px solid #27ae6044; }
+.btn-borrar {
+  background: none; border: none; color: var(--muted); font-size: 1.1rem;
+  cursor: pointer; padding: 4px 6px;
+}
+.btn-borrar:active { color: var(--red); }
+
+/* ── MODAL NUEVA PARTIDA ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: #00000099;
+  display: flex; align-items: flex-end; justify-content: center;
+  z-index: 100; opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.modal-overlay.visible { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--surface); border-radius: 24px 24px 0 0;
+  padding: 24px 24px 44px; width: 100%; max-width: 520px;
+  transform: translateY(100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+.modal-overlay.visible .modal { transform: translateY(0); }
+.modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.modal h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 2px; margin-bottom: 16px; }
+.campo { margin-bottom: 12px; }
+.campo label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+.campo input, .campo select {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; color: var(--text); font-family: 'Nunito', sans-serif;
+  font-size: 1rem; padding: 12px 14px; outline: none; -webkit-appearance: none;
+  transition: border-color .2s;
+}
+.campo input:focus, .campo select:focus { border-color: var(--gold); }
+.campo select option { background: var(--surface2); }
+.fila-btns { display: flex; gap: 10px; margin-top: 18px; }
+.btn-modal {
+  flex: 1; padding: 14px; border: none; border-radius: 14px;
+  font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 1px;
+  cursor: pointer; -webkit-appearance: none; transition: transform .1s;
+}
+.btn-modal:active { transform: scale(0.97); }
+.btn-ok  { background: var(--gold); color: #0d0d1a; }
+.btn-cancel { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+
+/* ── PANTALLA ENTRADA RULETA ── */
+#pantalla-entrada {
+  display: none; flex-direction: column; align-items: center;
+  min-height: 100dvh; padding: 24px 20px 40px; gap: 14px;
+}
+.back-btn {
+  align-self: flex-start; background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); border-radius: 10px; padding: 8px 14px;
+  font-family: 'Nunito', sans-serif; font-size: 0.9rem; cursor: pointer;
+}
+#pantalla-entrada h2 {
+  font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem;
+  color: var(--gold); letter-spacing: 2px; text-align: center;
+}
+.info-ronda {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px 16px; text-align: center;
+  font-size: 0.85rem; color: var(--muted); width: 100%; max-width: 420px;
+}
+.info-ronda strong { color: var(--text); }
+
+.sel-num {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 10px 18px;
+}
+.sel-num label { font-size: 0.9rem; color: var(--muted); }
+.sel-num select {
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--gold); font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.4rem; border-radius: 8px; padding: 4px 10px;
+  outline: none; -webkit-appearance: none; text-align: center; width: 60px;
+}
+
+#grid-nombres { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; max-width: 420px; }
+#grid-nombres.una-col { grid-template-columns: 1fr; }
+.campo-nombre {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 8px 12px;
+}
+.campo-nombre span { color: var(--muted); font-size: 0.8rem; width: 18px; flex-shrink: 0; }
+.campo-nombre input {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--text); font-family: 'Nunito', sans-serif; font-size: 0.95rem;
+}
+.campo-nombre input::placeholder { color: var(--border); }
+
+.btn-comenzar {
+  width: 100%; max-width: 420px; padding: 16px; border: none; border-radius: 14px;
+  font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 2px;
+  background: var(--red); color: white; cursor: pointer;
+  box-shadow: 0 4px 24px #e74c3c44; -webkit-appearance: none; transition: transform .1s;
+}
+.btn-comenzar:active { transform: scale(0.97); }
+#error-entrada { color: #ff6b6b; font-size: 0.85rem; min-height: 18px; text-align: center; }
+
+/* ── PANTALLA RULETA ── */
+#pantalla-ruleta {
+  display: none; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 100dvh; padding: 16px 16px 24px; gap: 14px;
+}
+.wheel-wrapper { position: relative; width: min(92vw, 460px); height: min(92vw, 460px); }
+canvas { width: 100%; height: 100%; }
+.pointer {
+  position: absolute; right: -20px; top: 50%; transform: translateY(-50%);
+  width: 0; height: 0;
+  border-top: 17px solid transparent; border-bottom: 17px solid transparent;
+  border-right: 34px solid var(--gold);
+  filter: drop-shadow(0 0 6px #f0c04099);
+}
+#resultado {
+  font-family: 'Bebas Neue', sans-serif; font-size: clamp(1.3rem, 5.5vw, 2rem);
+  color: var(--gold); letter-spacing: 2px; text-align: center;
+  min-height: 2.2rem; text-shadow: 0 0 18px #f0c04055;
+  opacity: 0; transition: opacity .4s;
+}
+#resultado.visible { opacity: 1; }
+.botones-ruleta { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; width: 100%; max-width: 460px; }
+.btn-accion {
+  padding: 12px 22px; border: none; border-radius: 12px;
+  font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 1px;
+  cursor: pointer; -webkit-appearance: none; transition: transform .1s;
+}
+.btn-accion:active { transform: scale(0.97); }
+.btn-girar     { background: var(--red);     color: white; }
+.btn-siguiente { background: var(--green);   color: white; display: none; }
+.btn-salir     { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<!-- ══ PANTALLA PARTIDAS ══ -->
+<div id="pantalla-partidas">
+  <h1>🎡 Ruleta</h1>
+  <p>¡Que la suerte decida!</p>
+  <button class="btn-crear" onclick="abrirModalPartida()">+ CREAR PARTIDA</button>
+  <div class="lista-partidas">
+    <div class="seccion-label">Partidas guardadas</div>
+    <div id="lista-partidas-contenido"></div>
+  </div>
+</div>
+
+<!-- ══ MODAL NUEVA PARTIDA ══ -->
+<div class="modal-overlay" id="modal-partida">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>Nueva partida</h2>
+    <div class="campo">
+      <label>Nombre de la partida</label>
+      <input type="text" id="input-nombre-partida" placeholder="Ej: Viaje a Roma" maxlength="30">
+    </div>
+    <div class="fila-btns">
+      <button class="btn-modal btn-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-modal btn-ok" onclick="crearPartida()">Crear</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PANTALLA ENTRADA RULETA ══ -->
+<div id="pantalla-entrada">
+  <button class="back-btn" onclick="volverAPartidas()">← Partidas</button>
+  <h2 id="titulo-partida"></h2>
+  <div class="info-ronda" id="info-ronda"></div>
+
+  <div class="sel-num">
+    <label>Participantes</label>
+    <select id="num-participantes" onchange="actualizarCampos()">
+      <option value="2">2</option><option value="3">3</option>
+      <option value="4" selected>4</option><option value="5">5</option>
+      <option value="6">6</option><option value="7">7</option>
+      <option value="8">8</option><option value="9">9</option>
+      <option value="10">10</option><option value="11">11</option>
+      <option value="12">12</option>
+    </select>
+  </div>
+
+  <div id="grid-nombres"></div>
+  <div id="error-entrada"></div>
+  <button class="btn-comenzar" onclick="comenzar()">▶ COMENZAR</button>
+</div>
+
+<!-- ══ PANTALLA RULETA ══ -->
+<div id="pantalla-ruleta">
+  <div class="wheel-wrapper">
+    <canvas id="canvas"></canvas>
+    <div class="pointer"></div>
+  </div>
+  <div id="resultado"></div>
+  <div class="botones-ruleta">
+    <button class="btn-accion btn-girar"     id="btn-girar"     onclick="iniciarGiro()">▶ GIRAR</button>
+    <button class="btn-accion btn-siguiente" id="btn-siguiente" onclick="siguienteRonda()">➡ SIGUIENTE RONDA</button>
+    <button class="btn-accion btn-salir"                        onclick="salirDeRuleta()">✕ SALIR</button>
+  </div>
+</div>
+
+<script>
+// ══ PALETA ══════════════════════════════════════════════════════════════════
+const PALETA = [
+  "#E74C3C","#2980B9","#F1C40F","#8E44AD","#27AE60","#FF6B9D","#1ABC9C","#E67E22",
+  "#6C3483","#FFD700","#16A085","#FF4500","#2471A3","#DC143C","#117A65","#FF8C00",
+  "#4A235A","#FA8072","#0E6655","#DAA520","#1F618D","#FF6347","#C0392B","#1A5276",
+];
+
+function generarColores(n) {
+  const copia = [...PALETA];
+  while (copia.length < n) copia.push(`hsl(${Math.random()*360|0},75%,48%)`);
+  const res = [];
+  for (let i = 0; i < n; i++) {
+    const idx = Math.floor(Math.random() * copia.length);
+    res.push(copia.splice(idx, 1)[0]);
+  }
+  return res;
+}
+
+// ══ SECUENCIA ════════════════════════════════════════════════════════════════
+function calcularSecuenciaTrucada(n) {
+  const pares   = Array.from({length:n},(_,i)=>i+1).filter(x=>x%2===0);
+  const impares = Array.from({length:n},(_,i)=>i+1).filter(x=>x%2!==0);
+  return [...pares, ...[...impares].reverse()].map(x=>x-1);
+}
+
+function calcularSecuenciaAleatoria(n) {
+  const arr = Array.from({length:n},(_,i)=>i);
+  for (let i = arr.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+
+// ══ ALMACENAMIENTO ════════════════════════════════════════════════════════════
+function cargarPartidas() {
+  try { return JSON.parse(localStorage.getItem('ruleta_partidas') || '[]'); }
+  catch { return []; }
+}
+function guardarPartidas(p) { localStorage.setItem('ruleta_partidas', JSON.stringify(p)); }
+
+// ══ ESTADO SESIÓN ════════════════════════════════════════════════════════════
+let partidaActualId = null;
+let participantesOrig = [];
+let participantesVivos = [];
+let secuencia = [];
+let ronda = 0;
+let colorPorParticipante = {};
+let anguloActual = 0;
+let girando = false;
+let pendienteEliminar = -1;
+let animId = null;
+
+// ══ PANTALLA PARTIDAS ════════════════════════════════════════════════════════
+function renderPartidas() {
+  const partidas = cargarPartidas();
+  const contenedor = document.getElementById('lista-partidas-contenido');
+  contenedor.innerHTML = '';
+  if (partidas.length === 0) {
+    contenedor.innerHTML = '<p style="color:var(--muted);font-size:.85rem;text-align:center;padding:20px 0">Sin partidas. Crea una nueva.</p>';
+    return;
+  }
+  partidas.forEach(p => {
+    const trucada = !p.primeraHecha;
+    const div = document.createElement('div');
+    div.className = 'card-partida';
+    div.innerHTML = `
+      <div class="card-info">
+        <div class="card-nombre">${p.nombre}</div>
+        <div class="card-sub">Creada ${new Date(p.creadaEn).toLocaleDateString('es-ES')}</div>
+      </div>
+      <span class="card-badge ${trucada ? 'badge-trucada' : 'badge-libre'}">${trucada ? '1ª TIRADA' : 'LIBRE'}</span>
+      <button class="btn-borrar" onclick="borrarPartida('${p.id}',event)">🗑</button>
+    `;
+    div.querySelector('.card-info').onclick = () => entrarPartida(p.id);
+    div.querySelector('.card-badge').onclick = () => entrarPartida(p.id);
+    contenedor.appendChild(div);
+  });
+}
+
+function abrirModalPartida() {
+  document.getElementById('input-nombre-partida').value = '';
+  document.getElementById('modal-partida').classList.add('visible');
+  setTimeout(() => document.getElementById('input-nombre-partida').focus(), 350);
+}
+function cerrarModal() { document.getElementById('modal-partida').classList.remove('visible'); }
+
+function crearPartida() {
+  const nombre = document.getElementById('input-nombre-partida').value.trim();
+  if (!nombre) { document.getElementById('input-nombre-partida').focus(); return; }
+  const partidas = cargarPartidas();
+  const nueva = { id: Date.now().toString(), nombre, creadaEn: Date.now(), primeraHecha: false };
+  partidas.unshift(nueva);
+  guardarPartidas(partidas);
+  cerrarModal();
+  renderPartidas();
+}
+
+function borrarPartida(id, e) {
+  e.stopPropagation();
+  const partidas = cargarPartidas().filter(p => p.id !== id);
+  guardarPartidas(partidas);
+  renderPartidas();
+}
+
+function entrarPartida(id) {
+  partidaActualId = id;
+  const partidas = cargarPartidas();
+  const p = partidas.find(x => x.id === id);
+
+  document.getElementById('titulo-partida').textContent = p.nombre;
+  document.getElementById('info-ronda').innerHTML = p.primeraHecha
+    ? '✅ Primera tirada ya realizada — esta será <strong>totalmente aleatoria</strong>'
+    : '🎯 Esta será la <strong>primera tirada</strong> (secuencia especial)';
+
+  document.getElementById('pantalla-partidas').style.display = 'none';
+  document.getElementById('pantalla-entrada').style.display = 'flex';
+  actualizarCampos();
+}
+
+// ══ PANTALLA ENTRADA ═════════════════════════════════════════════════════════
+function volverAPartidas() {
+  document.getElementById('pantalla-entrada').style.display = 'none';
+  document.getElementById('pantalla-partidas').style.display = 'flex';
+}
+
+function actualizarCampos() {
+  const n = parseInt(document.getElementById('num-participantes').value);
+  const grid = document.getElementById('grid-nombres');
+  grid.innerHTML = '';
+  grid.className = n <= 4 ? 'una-col' : '';
+  for (let i = 0; i < n; i++) {
+    const div = document.createElement('div');
+    div.className = 'campo-nombre';
+    div.innerHTML = `<span>${i+1}.</span><input type="text" placeholder="Nombre" maxlength="14" id="p${i}">`;
+    grid.appendChild(div);
+  }
+}
+
+function comenzar() {
+  const n = parseInt(document.getElementById('num-participantes').value);
+  const nombres = Array.from({length:n}, (_,i) => document.getElementById(`p${i}`).value.trim());
+  if (nombres.some(x => x === '')) {
+    document.getElementById('error-entrada').textContent = '⚠ Rellena todos los nombres.';
+    return;
+  }
+  document.getElementById('error-entrada').textContent = '';
+
+  const partidas = cargarPartidas();
+  const p = partidas.find(x => x.id === partidaActualId);
+  const esTrucada = !p.primeraHecha;
+
+  participantesOrig  = nombres;
+  participantesVivos = nombres.map((_,i) => i);
+  secuencia = esTrucada ? calcularSecuenciaTrucada(n) : calcularSecuenciaAleatoria(n);
+  ronda = 0;
+  anguloActual = 0;
+  pendienteEliminar = -1;
+
+  const cols = generarColores(n);
+  colorPorParticipante = {};
+  for (let i = 0; i < n; i++) colorPorParticipante[i] = cols[i];
+
+  document.getElementById('pantalla-entrada').style.display = 'none';
+  const pr = document.getElementById('pantalla-ruleta');
+  pr.style.display = 'flex';
+  document.getElementById('resultado').textContent = '';
+  document.getElementById('resultado').classList.remove('visible');
+  document.getElementById('btn-siguiente').style.display = 'none';
+
+  iniciarCanvas();
+  setTimeout(dibujar, 80);
+}
+
+// ══ CANVAS ═══════════════════════════════════════════════════════════════════
+function iniciarCanvas() {
+  const canvas = document.getElementById('canvas');
+  const size = canvas.offsetWidth;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = size * dpr;
+  canvas.height = size * dpr;
+  canvas.getContext('2d').scale(dpr, dpr);
+}
+function getCtx()  { return document.getElementById('canvas').getContext('2d'); }
+function getSize() { return document.getElementById('canvas').offsetWidth; }
+
+// ══ DIBUJO ═══════════════════════════════════════════════════════════════════
+function dibujar() {
+  const ctx = getCtx(), size = getSize();
+  const cx = size/2, cy = size/2, r = size/2 - 4;
+  const n = participantesVivos.length;
+  if (n === 0) return;
+  const seg = (2*Math.PI)/n;
+  const fs = Math.max(9, Math.min(15, r/(n*0.65)));
+  ctx.clearRect(0, 0, size, size);
+
+  participantesVivos.forEach((idxOrig, i) => {
+    const inicio = anguloActual + i*seg, fin = inicio+seg;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,inicio,fin); ctx.closePath();
+    ctx.fillStyle = colorPorParticipante[idxOrig]||'#888';
+    ctx.fill(); ctx.strokeStyle='#0d0d1a'; ctx.lineWidth=2; ctx.stroke();
+
+    const mid = inicio+seg/2;
+    const anchoMax = Math.min(r*0.72, 2*r*0.65*Math.sin(seg/2)*0.85);
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(mid);
+    ctx.textAlign='center';
+    ctx.font=`bold ${fs}px Nunito,sans-serif`;
+    ctx.shadowColor='#00000099'; ctx.shadowBlur=3;
+    ctx.shadowOffsetX=1; ctx.shadowOffsetY=1;
+    ctx.fillStyle='white';
+    ctx.fillText(participantesOrig[idxOrig], r*0.62, fs*0.36, anchoMax);
+    ctx.restore();
+  });
+
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,2*Math.PI);
+  ctx.strokeStyle='#f0c040'; ctx.lineWidth=4; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx,cy,16,0,2*Math.PI);
+  ctx.fillStyle='#0d0d1a'; ctx.fill();
+  ctx.strokeStyle='#f0c040'; ctx.lineWidth=3; ctx.stroke();
+}
+
+// ══ GIRO ═════════════════════════════════════════════════════════════════════
+function iniciarGiro() {
+  if (girando || ronda >= secuencia.length) return;
+  document.getElementById('resultado').classList.remove('visible');
+  document.getElementById('btn-girar').disabled = true;
+  document.getElementById('btn-siguiente').style.display = 'none';
+  girando = true;
+
+  const idxGanadorOrig = secuencia[ronda];
+  const posEnVivos = participantesVivos.indexOf(idxGanadorOrig);
+  const n = participantesVivos.length;
+  const seg = (2*Math.PI)/n;
+
+  const t = betaRandom(0.5, 0.5);
+  const margen = seg*0.08;
+  const offset = margen + t*(seg-2*margen);
+  const destino = (-(posEnVivos*seg)-offset+4*Math.PI)%(2*Math.PI);
+  const vueltas = (6+Math.floor(Math.random()*4))*2*Math.PI;
+  const delta = vueltas+((destino-anguloActual%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+
+  animar(delta, 4000, idxGanadorOrig);
+}
+
+function betaRandom(a,b) { const ga=gammaRandom(a),gb=gammaRandom(b); return ga/(ga+gb); }
+function gammaRandom(shape) {
+  if (shape<1) return gammaRandom(1+shape)*Math.pow(Math.random(),1/shape);
+  const d=shape-1/3,c=1/Math.sqrt(9*d);
+  while(true){
+    let x,v;
+    do{x=normalRandom();v=1+c*x;}while(v<=0);
+    v=v*v*v; const u=Math.random();
+    if(u<1-0.0331*(x*x)*(x*x)) return d*v;
+    if(Math.log(u)<0.5*x*x+d*(1-v+Math.log(v))) return d*v;
+  }
+}
+function normalRandom(){
+  let u=0,v=0;
+  while(!u)u=Math.random(); while(!v)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+function animar(delta, duracion, idxGanadorOrig) {
+  const inicio=performance.now(), anguloInicio=anguloActual;
+  function easeOut(t){return 1-Math.pow(1-t,3);}
+  function step(ahora){
+    const t=Math.min((ahora-inicio)/duracion,1);
+    anguloActual=anguloInicio+delta*easeOut(t);
+    dibujar();
+    if(t<1){animId=requestAnimationFrame(step);}
+    else{girando=false; document.getElementById('btn-girar').disabled=false; mostrarGanador(idxGanadorOrig);}
+  }
+  animId=requestAnimationFrame(step);
+}
+
+// ══ GANADOR ══════════════════════════════════════════════════════════════════
+function mostrarGanador(idxGanadorOrig) {
+  const nombre = participantesOrig[idxGanadorOrig];
+  const quedan = participantesVivos.length-1;
+  const el = document.getElementById('resultado');
+  const btnSig = document.getElementById('btn-siguiente');
+
+  if (quedan > 0) {
+    el.textContent = `🏆 ¡${nombre} ha ganado esta ronda!`;
+    btnSig.textContent = `➡ SIGUIENTE RONDA (${quedan} restantes)`;
+    btnSig.style.display = 'inline-block';
+  } else {
+    el.textContent = `🎉 ¡${nombre} es el último! Ruleta finalizada.`;
+    btnSig.style.display = 'none';
+    // Marcar primera tirada como hecha al terminar toda la ruleta
+    marcarPrimeraHecha();
+  }
+  el.classList.add('visible');
+  ronda++;
+  pendienteEliminar = idxGanadorOrig;
+}
+
+function marcarPrimeraHecha() {
+  const partidas = cargarPartidas();
+  const p = partidas.find(x => x.id === partidaActualId);
+  if (p && !p.primeraHecha) {
+    p.primeraHecha = true;
+    guardarPartidas(partidas);
+  }
+}
+
+function siguienteRonda() {
+  participantesVivos = participantesVivos.filter(x => x !== pendienteEliminar);
+  document.getElementById('btn-siguiente').style.display = 'none';
+  document.getElementById('resultado').classList.remove('visible');
+  dibujar();
+}
+
+function salirDeRuleta() {
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  girando = false;
+  document.getElementById('pantalla-ruleta').style.display = 'none';
+  document.getElementById('pantalla-partidas').style.display = 'flex';
+  renderPartidas();
+}
+
+// ══ MODAL CIERRE FUERA ═══════════════════════════════════════════════════════
+document.getElementById('modal-partida').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-partida'))
+    document.getElementById('modal-partida').classList.remove('visible');
+});
+document.getElementById('input-nombre-partida').addEventListener('keydown', e => {
+  if (e.key === 'Enter') crearPartida();
+});
+
+// ══ INIT ═════════════════════════════════════════════════════════════════════
+actualizarCampos();
+renderPartidas();
+</script>
+</body>
+</html>
