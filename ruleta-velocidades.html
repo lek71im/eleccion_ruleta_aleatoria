@@ -282,11 +282,17 @@ function calcularSecuenciaAleatoria(n) {
 }
 
 // ══ ALMACENAMIENTO ════════════════════════════════════════════════════════════
-function cargarPartidas() {
-  try { return JSON.parse(localStorage.getItem('ruleta_partidas') || '[]'); }
-  catch { return []; }
+let _partidas = [];
+(function init() {
+  try { _partidas = JSON.parse(sessionStorage.getItem('ruleta_partidas') || '[]'); } catch {}
+  try { if (!_partidas.length) _partidas = JSON.parse(localStorage.getItem('ruleta_partidas') || '[]'); } catch {}
+})();
+function cargarPartidas() { return _partidas; }
+function guardarPartidas(p) {
+  _partidas = p;
+  try { sessionStorage.setItem('ruleta_partidas', JSON.stringify(p)); } catch {}
+  try { localStorage.setItem('ruleta_partidas', JSON.stringify(p)); } catch {}
 }
-function guardarPartidas(p) { localStorage.setItem('ruleta_partidas', JSON.stringify(p)); }
 
 // ══ ESTADO SESIÓN ════════════════════════════════════════════════════════════
 let partidaActualId = null;
