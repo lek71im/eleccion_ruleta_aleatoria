@@ -281,18 +281,10 @@ function calcularSecuenciaAleatoria(n) {
   return arr;
 }
 
-// ══ ALMACENAMIENTO ════════════════════════════════════════════════════════════
+// ══ ALMACENAMIENTO (memoria pura) ════════════════════════════════════════════
 let _partidas = [];
-(function init() {
-  try { _partidas = JSON.parse(sessionStorage.getItem('ruleta_partidas') || '[]'); } catch {}
-  try { if (!_partidas.length) _partidas = JSON.parse(localStorage.getItem('ruleta_partidas') || '[]'); } catch {}
-})();
 function cargarPartidas() { return _partidas; }
-function guardarPartidas(p) {
-  _partidas = p;
-  try { sessionStorage.setItem('ruleta_partidas', JSON.stringify(p)); } catch {}
-  try { localStorage.setItem('ruleta_partidas', JSON.stringify(p)); } catch {}
-}
+function guardarPartidas(p) { _partidas = p; }
 
 // ══ ESTADO SESIÓN ════════════════════════════════════════════════════════════
 let partidaActualId = null;
@@ -343,11 +335,8 @@ function cerrarModal() { document.getElementById('modal-partida').classList.remo
 function crearPartida() {
   const nombre = document.getElementById('input-nombre-partida').value.trim();
   if (!nombre) { document.getElementById('input-nombre-partida').focus(); return; }
-  const partidas = cargarPartidas();
-  const nueva = { id: Date.now().toString(), nombre, creadaEn: Date.now(), primeraHecha: false };
-  partidas.unshift(nueva);
-  guardarPartidas(partidas);
-  cerrarModal();
+  _partidas.unshift({ id: Date.now().toString(), nombre, creadaEn: Date.now(), primeraHecha: false });
+  document.getElementById('modal-partida').classList.remove('visible');
   renderPartidas();
 }
 
