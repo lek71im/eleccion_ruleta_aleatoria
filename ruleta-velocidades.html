@@ -320,7 +320,6 @@ function renderPartidas() {
       <button class="btn-borrar" onclick="borrarPartida('${p.id}',event)">🗑</button>
     `;
     div.querySelector('.card-info').onclick = () => entrarPartida(p.id);
-    div.querySelector('.card-badge').onclick = () => entrarPartida(p.id);
     contenedor.appendChild(div);
   });
 }
