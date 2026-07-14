@@ -281,10 +281,15 @@ function calcularSecuenciaAleatoria(n) {
   return arr;
 }
 
-// ══ ALMACENAMIENTO (memoria pura) ════════════════════════════════════════════
+// ══ ALMACENAMIENTO ════════════════════════════════════════════════════════════
 let _partidas = [];
 function cargarPartidas() { return _partidas; }
-function guardarPartidas(p) { _partidas = p; }
+function guardarPartidas(p) {
+  _partidas = p;
+  try { localStorage.setItem('rp2', JSON.stringify(p)); } catch(e) {}
+}
+// Cargar al inicio
+try { const d = localStorage.getItem('rp2'); if(d) _partidas = JSON.parse(d); } catch(e) {}
 
 // ══ ESTADO SESIÓN ════════════════════════════════════════════════════════════
 let partidaActualId = null;
@@ -395,6 +400,9 @@ function comenzar() {
   ronda = 0;
   anguloActual = 0;
   pendienteEliminar = -1;
+
+  // Marcar como hecha nada más comenzar la primera tirada
+  if (esTrucada) marcarPrimeraHecha();
 
   const cols = generarColores(n);
   colorPorParticipante = {};
@@ -527,8 +535,6 @@ function mostrarGanador(idxGanadorOrig) {
   } else {
     el.textContent = `🎉 ¡${nombre} es el último! Ruleta finalizada.`;
     btnSig.style.display = 'none';
-    // Marcar primera tirada como hecha al terminar toda la ruleta
-    marcarPrimeraHecha();
   }
   el.classList.add('visible');
   ronda++;
